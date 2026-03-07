@@ -33,7 +33,7 @@ export default function AiTutorPanel({ experimentId, experimentTitle, fullSource
     if (!line.content.trim()) return;
 
     const userMessage: Message = { role: "user", content: `Explain line ${line.number}: \`${line.content.trim()}\`` };
-    setMessages(prev => [...prev, userMessage]);
+    setMessages(prev => [...prev, userMessage, { role: "ai", content: "" }]);
     setIsLoading(true);
 
     try {
@@ -49,10 +49,42 @@ export default function AiTutorPanel({ experimentId, experimentTitle, fullSource
           context: "code_walkthrough"
         })
       });
-      const data = await res.json();
-      setMessages(prev => [...prev, { role: "ai", content: data.explanation }]);
+
+      if (!res.body) throw new Error("No response body");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      
+      setIsLoading(false);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+        
+        for (const l of lines) {
+          if (l === 'data: [DONE]') return;
+          try {
+            const data = JSON.parse(l.slice(6));
+            if (data.text) {
+              setMessages(prev => {
+                const newMessages = [...prev];
+                newMessages[newMessages.length - 1].content += data.text;
+                return newMessages;
+              });
+            }
+          } catch (e) {
+            console.error("Error parsing stream chunk", e);
+          }
+        }
+      }
     } catch (err) {
-      setMessages(prev => [...prev, { role: "ai", content: "Sorry, I couldn't generate an explanation right now." }]);
+      setMessages(prev => {
+        const newMessages = [...prev];
+        newMessages[newMessages.length - 1].content = "Sorry, I couldn't generate an explanation right now.";
+        return newMessages;
+      });
     } finally {
       setIsLoading(false);
     }

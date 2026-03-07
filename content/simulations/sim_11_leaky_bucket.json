@@ -10,10 +10,16 @@
       "narration": "Packet of 30 bytes arrives. Bucket has space (0+30 ≤ 60). Accepted. Output rate drains 20 bytes. 10 bytes remain."
     },
     {
+      "packet_size": 40, "event": "ACCEPT",
+      "bucket_level_before": 10, "bucket_level_after": 50,
+      "output_this_tick": 20, "bucket_after_output": 30,
+      "narration": "40-byte packet arrives. Bucket has 10 bytes used. 10+40=50 ≤ 60 (capacity). ACCEPTED. Output drains 20 bytes/tick. 30 bytes remain."
+    },
+    {
       "packet_size": 40, "event": "PARTIAL_DROP",
-      "bucket_level_before": 10, "bucket_level_after": 60,
-      "dropped_bytes": -10,
-      "narration": "40-byte packet arrives. Bucket has 10 bytes. 10+40=50 ≤ 60, accepted. Output drains 20. 30 remain."
+      "bucket_level_before": 50, "bucket_level_after": 60,
+      "dropped_bytes": 30, "output_this_tick": 20, "bucket_after_output": 40,
+      "narration": "40-byte packet arrives. Only 10 bytes of space left (60-50=10). 10 bytes accepted, 30 bytes DROPPED. This is partial drop."
     },
     {
       "packet_size": 80, "event": "REJECT",

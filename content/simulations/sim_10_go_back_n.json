@@ -1,0 +1,29 @@
+{
+  "experiment_id": 10,
+  "type": "packet_timeline",
+  "config": { "window_size": 4, "total_packets": 8 },
+  "frames": [
+    {
+      "id": 1, "event": "WINDOW_SEND", "packets": [0,1,2,3],
+      "window_start": 0, "window_end": 3,
+      "narration": "Window size = 4. Sender fires packets 0,1,2,3 without waiting for ACKs."
+    },
+    {
+      "id": 2, "event": "ACK", "packet": 0,
+      "from": "receiver", "to": "sender",
+      "narration": "ACK 0 received. Window slides: now sending packets 1,2,3,4."
+    },
+    {
+      "id": 3, "event": "LOSS", "packet": 2,
+      "narration": "Packet 2 LOST in transit. Receiver discards out-of-order packets 3 and 4."
+    },
+    {
+      "id": 4, "event": "TIMEOUT", "from_packet": 2,
+      "narration": "Timeout! Go-Back-N means we retransmit packet 2 AND all after it: 2, 3, 4, 5."
+    },
+    {
+      "id": 5, "event": "RETRANSMIT", "packets": [2,3,4,5],
+      "narration": "Retransmitting from packet 2. This is the inefficiency vs Selective Repeat."
+    }
+  ]
+}

@@ -4,7 +4,7 @@ import PacketTimeline from "./simulations/PacketTimeline";
 import LeakyBucket from "./simulations/LeakyBucket";
 import { Loader2 } from "lucide-react";
 
-export default function SimulationPanel({ experimentId, type }: { experimentId: number, type: string }) {
+export default function SimulationPanel({ experimentId }: { experimentId: number }) {
   const [simulationData, setSimulationData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,11 +43,28 @@ export default function SimulationPanel({ experimentId, type }: { experimentId: 
     );
   }
 
+  const type = simulationData.type;
+
+  if (type === "none") {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 text-zinc-400 p-8 text-center">
+        <p className="text-lg font-medium">No simulation for this experiment.</p>
+        <p className="text-sm">This experiment covers theory and does not have a runtime simulation. Use the Concept and Code tabs to learn.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col bg-zinc-950">
-      {type === "routing_graph" && <RoutingGraph data={simulationData} />}
+      {(type === "routing_graph" || type === "dijkstra_graph") && <RoutingGraph data={simulationData} />}
       {type === "packet_timeline" && <PacketTimeline data={simulationData} />}
       {type === "leaky_bucket" && <LeakyBucket data={simulationData} />}
+      {type === "server_log" && (
+        <div className="flex flex-col items-center justify-center h-full gap-3 text-zinc-400 p-8 text-center">
+          <p className="text-lg font-medium">Server Log Simulation</p>
+          <p className="text-sm">This simulation type is under construction.</p>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,20 +5,44 @@ export default function PracticePanel({ practice }: { practice: any }) {
   const [answers, setAnswers] = useState<{ [key: number]: string }>({});
   const [results, setResults] = useState<{ [key: number]: { correct: boolean, feedback: string } }>({});
 
-  const handleSubmit = (exerciseId: number) => {
+  const handleSubmit = async (exerciseId: number) => {
     const exercise = practice.exercises.find((e: any) => e.id === exerciseId);
     const answer = answers[exerciseId] || "";
     
-    // Simple exact match for MVP, normally this would go to the AI evaluator endpoint
-    const isCorrect = answer.trim() === exercise.answer;
-    
     setResults(prev => ({
       ...prev,
-      [exerciseId]: {
-        correct: isCorrect,
-        feedback: isCorrect ? "Correct! Great job." : `Not quite. Hint: ${exercise.hint}`
-      }
+      [exerciseId]: { correct: false, feedback: "Evaluating..." }
     }));
+
+    try {
+      const res = await fetch("/api/practice/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          exp_title: practice.title || "Experiment",
+          exercise_description: exercise.description,
+          correct_answer: exercise.answer,
+          student_answer: answer
+        })
+      });
+      const data = await res.json();
+      
+      setResults(prev => ({
+        ...prev,
+        [exerciseId]: {
+          correct: data.correct,
+          feedback: data.feedback
+        }
+      }));
+    } catch (err) {
+      setResults(prev => ({
+        ...prev,
+        [exerciseId]: {
+          correct: false,
+          feedback: "Failed to evaluate answer. Please try again."
+        }
+      }));
+    }
   };
 
   return (

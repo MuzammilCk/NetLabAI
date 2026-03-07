@@ -91,7 +91,7 @@ export default function ExperimentPage() {
               onLineClick={(num, content) => setSelectedLine({ number: num, content })}
             />
           )}
-          {activeTab === "simulation" && <SimulationPanel experimentId={experiment.id} type={experiment.id === 7 ? "routing_graph" : experiment.id === 9 ? "packet_timeline" : "leaky_bucket"} />}
+          {activeTab === "simulation" && <SimulationPanel experimentId={experiment.id} />}
           {activeTab === "practice" && <PracticePanel practice={experiment.practice} />}
         </div>
 

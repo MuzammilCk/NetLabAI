@@ -1,0 +1,12 @@
+{
+  "experiment_id": 101,
+  "type": "server_log",
+  "frames": [
+    { "id": 1, "actor": "server", "event": "BIND", "detail": "socket(AF_INET, SOCK_STREAM, 0) → fd=3", "narration": "Server creates TCP socket and binds to port 8080." },
+    { "id": 2, "actor": "server", "event": "LISTEN", "detail": "listen(sockfd, 5)", "narration": "Server starts listening. Backlog queue allows 5 pending connections." },
+    { "id": 3, "actor": "client1", "event": "CONNECT", "detail": "connect() → TCP 3-way handshake", "narration": "Client 1 connects. SYN → SYN-ACK → ACK." },
+    { "id": 4, "actor": "server", "event": "ACCEPT", "detail": "accept() → clientfd=4", "narration": "Server accepts. New file descriptor 4 is created for this client." },
+    { "id": 5, "actor": "client1", "event": "SEND", "detail": "send(fd, 'Hello', 5, 0)", "narration": "Client 1 sends message." },
+    { "id": 6, "actor": "server", "event": "BROADCAST", "detail": "send() to all connected clients", "narration": "Server broadcasts to all clients. This is how multi-user chat works." }
+  ]
+}

@@ -2,8 +2,12 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -76,6 +80,11 @@ async function startServer() {
   app.post("/api/ai/explain", async (req, res) => {
     const { experiment_id, line, context, line_number, full_source, exp_title } = req.body;
     
+    const lines = full_source.split('\n');
+    const start = Math.max(0, line_number - 10);
+    const end = Math.min(lines.length, line_number + 10);
+    const contextWindow = lines.slice(start, end).map((l: string, i: number) => `${start + i + 1}: ${l}`).join('\n');
+
     const systemPrompt = `You are NetLabAI, an expert teaching assistant specializing in C socket programming and computer networking. You are helping an undergraduate student understand their networking lab code.
 
 Your explanation style:
@@ -86,30 +95,98 @@ Your explanation style:
 - If the line is part of a known algorithm, connect it to the algorithm explicitly.
 
 Current experiment: ${exp_title}
-Full source file for reference:
+Relevant code context (lines ${start + 1}-${end}):
 \`\`\`c
-${full_source}
+${contextWindow}
 \`\`\`
 
-The student clicked line ${line_number}:
-\`\`\`c
-${line}
-\`\`\`
-
-Explain this line clearly to a student who understands basic C but is new to networking.`;
+Explain the clicked line: what it does, why it exists, and what breaks if removed.
+4-6 sentences. Connect to the networking concept if applicable.`;
 
     try {
-      const response = await ai.models.generateContent({
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      const responseStream = await ai.models.generateContentStream({
         model: "gemini-3-flash-preview",
-        contents: "Explain the line of code.",
+        contents: `Line ${line_number}: \`${line}\``,
         config: {
           systemInstruction: systemPrompt,
         }
       });
-      res.json({ explanation: response.text });
+
+      for await (const chunk of responseStream) {
+        res.write(`data: ${JSON.stringify({ text: chunk.text })}\n\n`);
+      }
+      res.write('data: [DONE]\n\n');
+      res.end();
     } catch (e) {
       console.error(e);
-      res.status(500).json({ error: "Failed to get explanation" });
+      res.write(`data: ${JSON.stringify({ error: "Failed to get explanation" })}\n\n`);
+      res.end();
+    }
+  });
+
+  app.post("/api/practice/submit", async (req, res) => {
+    const { exp_title, exercise_description, correct_answer, student_answer } = req.body;
+
+    const systemPrompt = `You are NetLabAI evaluating a student's understanding of a networking lab exercise.
+You are NOT a compiler. You are evaluating CONCEPTUAL CORRECTNESS, not syntax.
+
+Experiment: ${exp_title}
+Exercise description: ${exercise_description}
+Correct answer: ${correct_answer}
+
+Evaluate using this JSON schema ONLY — no extra text:
+{
+  "correct": boolean,
+  "partial": boolean,
+  "score": 0-100,
+  "missing_concepts": ["concept1", "concept2"],
+  "correct_parts": ["what they got right"],
+  "feedback": "2-3 sentence personalized explanation",
+  "hint": "one specific hint if incorrect",
+  "next_action": "retry | move_forward | review_concept"
+}
+
+Rules:
+- Score 100 only if the student demonstrates full understanding
+- Score 60-99 for partial credit — understands mechanism but wrong syntax/variable
+- Score 0-59 for wrong conceptual approach
+- "missing_concepts" must reference actual concepts from the experiment
+- "feedback" must mention what the student got right first, then what is missing
+- Never say "wrong" — say "not quite" or "almost"`;
+
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Student answer: ${student_answer}`,
+        config: {
+          systemInstruction: systemPrompt,
+          responseMimeType: "application/json",
+        }
+      });
+      
+      let result;
+      try {
+        result = JSON.parse(response.text);
+      } catch (e) {
+        result = {
+          correct: false,
+          partial: false,
+          score: 0,
+          missing_concepts: [],
+          correct_parts: [],
+          feedback: "Unable to evaluate right now. Please try again.",
+          hint: "Review the experiment's code walkthrough section.",
+          next_action: "retry"
+        };
+      }
+      res.json(result);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: "Failed to evaluate practice" });
     }
   });
 
@@ -119,14 +196,19 @@ Explain this line clearly to a student who understands basic C but is new to net
     const systemPrompt = `You are NetLabAI tutor for experiment: ${exp_title}. Answer questions about this experiment's C code and concepts. Be concise and student-friendly.`;
 
     try {
+      const cleanHistory = (history || []).filter((msg: any) => msg.role === "user" || msg.role === "ai").map((msg: any) => ({
+        role: msg.role === "ai" ? "model" : "user",
+        parts: [{ text: msg.content.substring(0, 2000) }]
+      }));
+
       const chat = ai.chats.create({
         model: "gemini-3-flash-preview",
         config: {
           systemInstruction: systemPrompt,
-        }
+        },
+        history: cleanHistory
       });
       
-      // We'd normally pass history here, but for simplicity we'll just send the message
       const response = await chat.sendMessage({ message });
       res.json({ reply: response.text });
     } catch (e) {

@@ -7,15 +7,21 @@ export default function CodeWalkthrough({ codeData, onLineClick }: { codeData: a
   const monaco = useMonaco();
   const editorRef = useRef<any>(null);
 
-  const handleEditorDidMount = (editor: any) => {
+  const handleEditorDidMount = (editor: any, monaco: any) => {
     editorRef.current = editor;
     
     editor.onMouseDown((e: any) => {
-      if (e.target.position) {
-        const lineNumber = e.target.position.lineNumber;
-        const model = editor.getModel();
-        const lineContent = model.getLineContent(lineNumber);
-        onLineClick(lineNumber, lineContent);
+      const target = e.target;
+      if (
+        target.type === monaco.editor.MouseTargetType.GUTTER_LINE_NUMBERS ||
+        target.type === monaco.editor.MouseTargetType.CONTENT_TEXT
+      ) {
+        const lineNumber = target.position?.lineNumber;
+        if (lineNumber) {
+          const model = editor.getModel();
+          const lineContent = model.getLineContent(lineNumber);
+          onLineClick(lineNumber, lineContent);
+        }
       }
     });
   };
