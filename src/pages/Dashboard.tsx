@@ -16,7 +16,15 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetch("/api/experiments")
-      .then(res => res.json())
+      .then(async res => {
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          return res.json();
+        } else {
+          const text = await res.text();
+          throw new Error(`Expected JSON but received: ${text.substring(0, 50)}...`);
+        }
+      })
       .then(data => {
         setExperiments(data);
         setLoading(false);

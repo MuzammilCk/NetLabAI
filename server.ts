@@ -11,8 +11,6 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -63,21 +61,25 @@ async function startServer() {
   app.get("/api/simulate/:id", (req, res) => {
     const expId = parseInt(req.params.id);
     const contentDir = path.resolve(__dirname, "content/simulations");
-    const files = fs.readdirSync(contentDir).filter(f => f.startsWith(`sim_${expId.toString().padStart(2, "0")}`));
-    if (files.length > 0) {
-      const file = path.join(contentDir, files[0]);
-      try {
-        res.json(JSON.parse(fs.readFileSync(file, "utf-8")));
-      } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: "Failed to load simulation" });
+    try {
+      if (!fs.existsSync(contentDir)) {
+        return res.status(404).json({ error: "Simulations directory not found" });
       }
-    } else {
-      res.status(404).json({ error: "Simulation not found" });
+      const files = fs.readdirSync(contentDir).filter(f => f.startsWith(`sim_${expId.toString().padStart(2, "0")}`));
+      if (files.length > 0) {
+        const file = path.join(contentDir, files[0]);
+        res.json(JSON.parse(fs.readFileSync(file, "utf-8")));
+      } else {
+        res.status(404).json({ error: "Simulation not found" });
+      }
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: "Failed to load simulation" });
     }
   });
 
   app.post("/api/ai/explain", async (req, res) => {
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const { experiment_id, line, context, line_number, full_source, exp_title } = req.body;
     
     const lines = full_source.split('\n');
@@ -121,14 +123,21 @@ Explain the clicked line: what it does, why it exists, and what breaks if remove
       }
       res.write('data: [DONE]\n\n');
       res.end();
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      res.write(`data: ${JSON.stringify({ error: "Failed to get explanation" })}\n\n`);
+      let errorMessage = "Failed to get explanation";
+      if (e.status === 400 || e.status === 403) {
+        errorMessage = "API key is invalid or missing. Please check your environment variables.";
+      } else if (e.message) {
+        errorMessage = e.message;
+      }
+      res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
       res.end();
     }
   });
 
   app.post("/api/practice/submit", async (req, res) => {
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const { exp_title, exercise_description, correct_answer, student_answer } = req.body;
 
     const systemPrompt = `You are NetLabAI evaluating a student's understanding of a networking lab exercise.
@@ -184,13 +193,29 @@ Rules:
         };
       }
       res.json(result);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      res.status(500).json({ error: "Failed to evaluate practice" });
+      let errorMessage = "Failed to evaluate practice";
+      if (e.status === 400 || e.status === 403) {
+        errorMessage = "API key is invalid or missing. Please check your environment variables.";
+      } else if (e.message) {
+        errorMessage = e.message;
+      }
+      res.status(500).json({ 
+        correct: false,
+        partial: false,
+        score: 0,
+        missing_concepts: [],
+        correct_parts: [],
+        feedback: `Error: ${errorMessage}`,
+        hint: "Please check your API key or try again later.",
+        next_action: "retry"
+      });
     }
   });
 
   app.post("/api/ai/chat", async (req, res) => {
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const { exp_title, message, history } = req.body;
     
     const systemPrompt = `You are NetLabAI tutor for experiment: ${exp_title}. Answer questions about this experiment's C code and concepts. Be concise and student-friendly.`;
@@ -211,9 +236,15 @@ Rules:
       
       const response = await chat.sendMessage({ message });
       res.json({ reply: response.text });
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      res.status(500).json({ error: "Failed to get chat reply" });
+      let errorMessage = "Failed to get chat reply";
+      if (e.status === 400 || e.status === 403) {
+        errorMessage = "API key is invalid or missing. Please check your environment variables.";
+      } else if (e.message) {
+        errorMessage = e.message;
+      }
+      res.status(500).json({ error: errorMessage });
     }
   });
 

@@ -25,7 +25,13 @@ export default function PracticePanel({ practice }: { practice: any }) {
           student_answer: answer
         })
       });
-      const data = await res.json();
+      const contentType = res.headers.get("content-type");
+      let data;
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        data = await res.json();
+      } else {
+        throw new Error("Invalid response from server");
+      }
       
       setResults(prev => ({
         ...prev,

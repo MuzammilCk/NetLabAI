@@ -14,6 +14,7 @@ export default function AiTutorPanel({ experimentId, experimentTitle, fullSource
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -32,6 +33,12 @@ export default function AiTutorPanel({ experimentId, experimentTitle, fullSource
   const handleLineClick = async (line: { number: number, content: string }) => {
     if (!line.content.trim()) return;
 
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     const userMessage: Message = { role: "user", content: `Explain line ${line.number}: \`${line.content.trim()}\`` };
     setMessages(prev => [...prev, userMessage, { role: "ai", content: "" }]);
     setIsLoading(true);
@@ -47,7 +54,8 @@ export default function AiTutorPanel({ experimentId, experimentTitle, fullSource
           line: line.content,
           line_number: line.number,
           context: "code_walkthrough"
-        })
+        }),
+        signal: abortController.signal
       });
 
       if (!res.body) throw new Error("No response body");
@@ -67,7 +75,13 @@ export default function AiTutorPanel({ experimentId, experimentTitle, fullSource
           if (l === 'data: [DONE]') return;
           try {
             const data = JSON.parse(l.slice(6));
-            if (data.text) {
+            if (data.error) {
+              setMessages(prev => {
+                const newMessages = [...prev];
+                newMessages[newMessages.length - 1].content = `Error: ${data.error}`;
+                return newMessages;
+              });
+            } else if (data.text) {
               setMessages(prev => {
                 const newMessages = [...prev];
                 newMessages[newMessages.length - 1].content += data.text;
@@ -79,14 +93,17 @@ export default function AiTutorPanel({ experimentId, experimentTitle, fullSource
           }
         }
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
       setMessages(prev => {
         const newMessages = [...prev];
-        newMessages[newMessages.length - 1].content = "Sorry, I couldn't generate an explanation right now.";
+        newMessages[newMessages.length - 1].content = `Sorry, I couldn't generate an explanation right now. ${err.message || ''}`;
         return newMessages;
       });
     } finally {
-      setIsLoading(false);
+      if (abortControllerRef.current === abortController) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -108,7 +125,13 @@ export default function AiTutorPanel({ experimentId, experimentTitle, fullSource
           history: messages
         })
       });
-      const data = await res.json();
+      const contentType = res.headers.get("content-type");
+      let data;
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        data = await res.json();
+      } else {
+        throw new Error("Invalid response from server");
+      }
       setMessages(prev => [...prev, { role: "ai", content: data.reply }]);
     } catch (err) {
       setMessages(prev => [...prev, { role: "ai", content: "Sorry, I couldn't process your question." }]);

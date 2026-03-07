@@ -11,9 +11,15 @@ export default function SimulationPanel({ experimentId }: { experimentId: number
 
   useEffect(() => {
     fetch(`/api/simulate/${experimentId}`)
-      .then(res => {
+      .then(async res => {
         if (!res.ok) throw new Error("Simulation data not found");
-        return res.json();
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          return res.json();
+        } else {
+          const text = await res.text();
+          throw new Error(`Expected JSON but received: ${text.substring(0, 50)}...`);
+        }
       })
       .then(data => {
         setSimulationData(data);
