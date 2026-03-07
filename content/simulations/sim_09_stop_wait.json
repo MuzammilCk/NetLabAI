@@ -1,0 +1,30 @@
+{
+  "experiment_id": 9,
+  "type": "packet_timeline",
+  "frames": [
+    {
+      "id": 1, "event": "SEND", "packet": 1,
+      "from": "sender", "to": "receiver", "label": "PKT[1]",
+      "narration": "Sender transmits Packet 1. Timer starts."
+    },
+    {
+      "id": 2, "event": "ACK", "packet": 1,
+      "from": "receiver", "to": "sender", "label": "ACK[1]",
+      "narration": "Receiver got PKT[1]. Sends ACK. Sender stops timer."
+    },
+    {
+      "id": 3, "event": "SEND", "packet": 2,
+      "from": "sender", "to": "receiver", "label": "PKT[2]",
+      "narration": "ACK received. Now sender can transmit Packet 2."
+    },
+    {
+      "id": 4, "event": "TIMEOUT", "packet": 2,
+      "narration": "No ACK received in time. TIMEOUT! Packet 2 must be retransmitted."
+    },
+    {
+      "id": 5, "event": "RETRANSMIT", "packet": 2,
+      "from": "sender", "to": "receiver", "label": "PKT[2] (retry)",
+      "narration": "Retransmitting Packet 2. Timer resets."
+    }
+  ]
+}

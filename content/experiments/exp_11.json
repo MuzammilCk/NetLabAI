@@ -1,0 +1,80 @@
+{
+  "id": 11,
+  "title": "Leaky Bucket Algorithm",
+  "subtitle": "Traffic Shaping and Rate Limiting",
+  "type": "coding",
+  "category": "traffic_control",
+  "difficulty": "intermediate",
+  "estimated_time_minutes": 25,
+  "description": "Implementation of the Leaky Bucket algorithm for traffic shaping",
+  "theory": {
+    "overview": "Imagine a bucket with a small hole in the bottom. You can pour water into it as fast as you want, but it only leaks out at a steady, constant rate. If you pour too much too fast, the bucket overflows. This is exactly how the Leaky Bucket algorithm smooths out bursty network traffic.",
+    "key_concepts": [
+      { "term": "Bucket Size", "definition": "The maximum amount of data (burst) that can be temporarily stored before being processed." },
+      { "term": "Output Rate", "definition": "The constant rate at which data leaves the bucket and enters the network." },
+      { "term": "Traffic Shaping", "definition": "Controlling the rate of traffic sent into a network to ensure a steady flow." }
+    ],
+    "protocol_flow": [
+      "Step 1: A packet arrives with a certain size.",
+      "Step 2: If the packet size plus current bucket contents is less than the bucket capacity, it's accepted.",
+      "Step 3: If it exceeds capacity, the packet is dropped (overflow).",
+      "Step 4: At each time interval, a fixed amount of data (output rate) leaves the bucket."
+    ]
+  },
+  "code": {
+    "language": "c",
+    "files": [
+      {
+        "filename": "leaky_bucket.c",
+        "full_source": "#include <stdio.h>\n#include <stdlib.h>\n#include <unistd.h>\n\n#define BUCKET_SIZE 100\n#define OUTPUT_RATE 20\n\nint main() {\n    int num_packets, i, packet_size, bucket_content = 0;\n\n    printf(\"Enter the number of packets: \");\n    scanf(\"%d\", &num_packets);\n\n    for (i = 1; i <= num_packets; i++) {\n        packet_size = rand() % 50 + 10; // Random packet size between 10 and 60\n        printf(\"\\nPacket %d arrives with size %d\\n\", i, packet_size);\n\n        if (packet_size + bucket_content <= BUCKET_SIZE) {\n            bucket_content += packet_size;\n            printf(\"Bucket accepts packet. Current content: %d\\n\", bucket_content);\n        } else {\n            printf(\"Bucket overflow! Packet dropped.\\n\");\n        }\n\n        // Simulate output rate\n        if (bucket_content >= OUTPUT_RATE) {\n            bucket_content -= OUTPUT_RATE;\n            printf(\"Outputting %d bytes. Remaining content: %d\\n\", OUTPUT_RATE, bucket_content);\n        } else if (bucket_content > 0) {\n            printf(\"Outputting %d bytes. Remaining content: 0\\n\", bucket_content);\n            bucket_content = 0;\n        }\n\n        sleep(1); // Wait for next tick\n    }\n\n    // Empty the remaining bucket\n    while (bucket_content > 0) {\n        printf(\"\\nNo new packets. Emptying bucket...\\n\");\n        if (bucket_content >= OUTPUT_RATE) {\n            bucket_content -= OUTPUT_RATE;\n            printf(\"Outputting %d bytes. Remaining content: %d\\n\", OUTPUT_RATE, bucket_content);\n        } else {\n            printf(\"Outputting %d bytes. Remaining content: 0\\n\", bucket_content);\n            bucket_content = 0;\n        }\n        sleep(1);\n    }\n\n    return 0;\n}",
+        "steps": [
+          {
+            "step_id": 1,
+            "title": "Define Constants",
+            "line_start": 5,
+            "line_end": 6,
+            "explanation": "We define `BUCKET_SIZE` as the maximum capacity of our bucket (100 bytes) and `OUTPUT_RATE` as the constant rate at which data leaves the bucket (20 bytes per tick).",
+            "concept_tags": ["macros", "constants"]
+          },
+          {
+            "step_id": 2,
+            "title": "Packet Arrival & Acceptance",
+            "line_start": 18,
+            "line_end": 23,
+            "explanation": "When a new packet arrives, we check if adding its size to the current `bucket_content` would exceed `BUCKET_SIZE`. If it fits, we add it. Otherwise, the bucket overflows and the packet is dropped.",
+            "concept_tags": ["if-else", "capacity check", "overflow"]
+          },
+          {
+            "step_id": 3,
+            "title": "Simulate Output Rate",
+            "line_start": 26,
+            "line_end": 32,
+            "explanation": "In each time tick, we simulate data leaving the bucket. If the bucket has more data than the `OUTPUT_RATE`, we subtract the rate. If it has less, we output whatever is left and set the content to 0.",
+            "concept_tags": ["rate limiting", "traffic shaping"]
+          },
+          {
+            "step_id": 4,
+            "title": "Empty Remaining Bucket",
+            "line_start": 38,
+            "line_end": 48,
+            "explanation": "After all packets have arrived, there might still be data left in the bucket. We use a `while` loop to continue outputting data at the constant rate until the bucket is completely empty.",
+            "concept_tags": ["while loop", "cleanup"]
+          }
+        ]
+      }
+    ]
+  },
+  "practice": {
+    "exercises": [
+      {
+        "id": 1,
+        "type": "fill_blank",
+        "difficulty": "easy",
+        "description": "How do you check if a packet fits in the bucket?",
+        "code_template": "if (packet_size + bucket_content ____ BUCKET_SIZE)",
+        "answer": "<=",
+        "hint": "The total size must be less than or equal to the capacity."
+      }
+    ]
+  }
+}

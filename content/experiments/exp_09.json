@@ -1,0 +1,80 @@
+{
+  "id": 9,
+  "title": "Stop-and-Wait Protocol",
+  "subtitle": "Sliding Window Protocol with Window Size 1",
+  "type": "coding",
+  "category": "flow_control",
+  "difficulty": "beginner",
+  "estimated_time_minutes": 20,
+  "description": "Implementation of the Stop-and-Wait ARQ protocol",
+  "theory": {
+    "overview": "Stop-and-Wait is the simplest flow control protocol. Imagine throwing a ball to a friend. You wait for them to catch it and say 'Got it!' before you throw the next one. If they don't say anything after a few seconds, you assume they dropped it and throw another one.",
+    "key_concepts": [
+      { "term": "ACK (Acknowledgement)", "definition": "A small message sent by the receiver to confirm a packet was successfully received." },
+      { "term": "Timeout", "definition": "A timer started by the sender. If an ACK isn't received before the timer expires, the packet is retransmitted." },
+      { "term": "Sequence Number", "definition": "A number attached to each packet (usually 0 or 1 in Stop-and-Wait) to distinguish new packets from retransmissions." }
+    ],
+    "protocol_flow": [
+      "Step 1: Sender transmits Packet 0 and starts a timer.",
+      "Step 2: Receiver gets Packet 0 and sends ACK 0.",
+      "Step 3: Sender receives ACK 0, stops timer, and transmits Packet 1.",
+      "Step 4: If timer expires before ACK arrives, sender retransmits the packet."
+    ]
+  },
+  "code": {
+    "language": "c",
+    "files": [
+      {
+        "filename": "stop_wait.c",
+        "full_source": "#include <stdio.h>\n#include <stdlib.h>\n#include <unistd.h>\n\nint main() {\n    int frames[] = {1, 2, 3, 4, 5};\n    int n = 5;\n    int i = 0;\n    int ack;\n\n    printf(\"Sender: Sending frames...\\n\");\n\n    while (i < n) {\n        printf(\"\\nSending Frame %d...\\n\", frames[i]);\n        printf(\"Waiting for ACK...\\n\");\n        \n        // Simulate network delay or loss\n        sleep(1);\n        \n        // Simulate random ACK reception (1 = success, 0 = lost)\n        ack = rand() % 2;\n\n        if (ack == 1) {\n            printf(\"Received ACK for Frame %d\\n\", frames[i]);\n            i++; // Move to next frame\n        } else {\n            printf(\"Timeout! ACK not received for Frame %d\\n\", frames[i]);\n            printf(\"Retransmitting Frame %d...\\n\", frames[i]);\n        }\n    }\n\n    printf(\"\\nAll frames sent successfully!\\n\");\n    return 0;\n}",
+        "steps": [
+          {
+            "step_id": 1,
+            "title": "Initialize Frames",
+            "line_start": 6,
+            "line_end": 9,
+            "explanation": "We define an array of frames to send. `n` is the total number of frames, and `i` keeps track of the current frame being sent. `ack` will store the simulated acknowledgement status.",
+            "concept_tags": ["arrays", "variables"]
+          },
+          {
+            "step_id": 2,
+            "title": "Send Loop",
+            "line_start": 13,
+            "line_end": 15,
+            "explanation": "The `while` loop continues until all `n` frames are successfully sent and acknowledged. Inside, we print that we are sending the current frame and waiting for its ACK.",
+            "concept_tags": ["while loop", "sending"]
+          },
+          {
+            "step_id": 3,
+            "title": "Simulate Network",
+            "line_start": 18,
+            "line_end": 21,
+            "explanation": "We use `sleep(1)` to simulate the time it takes for a packet to travel across the network. Then, we use `rand() % 2` to randomly simulate whether the ACK was successfully received (1) or lost/delayed (0).",
+            "concept_tags": ["simulation", "randomness"]
+          },
+          {
+            "step_id": 4,
+            "title": "Handle ACK or Timeout",
+            "line_start": 23,
+            "line_end": 29,
+            "explanation": "If `ack == 1`, the frame was successfully received, so we increment `i` to move to the next frame. If `ack == 0`, we simulate a timeout. We don't increment `i`, so the loop will retransmit the same frame in the next iteration.",
+            "concept_tags": ["if-else", "retransmission", "timeout"]
+          }
+        ]
+      }
+    ]
+  },
+  "practice": {
+    "exercises": [
+      {
+        "id": 1,
+        "type": "fill_blank",
+        "difficulty": "easy",
+        "description": "What should happen when an ACK is received?",
+        "code_template": "if (ack == 1) {\n    printf(\"Received ACK\\n\");\n    ____;\n}",
+        "answer": "i++",
+        "hint": "You need to move to the next frame."
+      }
+    ]
+  }
+}

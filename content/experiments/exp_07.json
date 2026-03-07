@@ -1,0 +1,80 @@
+{
+  "id": 7,
+  "title": "Distance Vector Routing",
+  "subtitle": "Bellman-Ford Algorithm in C",
+  "type": "coding",
+  "category": "routing",
+  "difficulty": "intermediate",
+  "estimated_time_minutes": 25,
+  "description": "Implementation of Bellman-Ford algorithm for routing",
+  "theory": {
+    "overview": "Distance Vector Routing is like asking your neighbors for directions. You don't know the whole map, but you know your neighbors, and they know theirs. By sharing what you know, everyone eventually figures out the shortest path to every destination.",
+    "key_concepts": [
+      { "term": "Routing Table", "definition": "A table stored in each router that keeps track of the shortest known distance to every other node." },
+      { "term": "Bellman-Ford", "definition": "The algorithm used to calculate the shortest paths in a weighted graph. It works by repeatedly relaxing the path costs." },
+      { "term": "Convergence", "definition": "The state where all routers have the correct, optimal routing tables and no further updates are needed." }
+    ],
+    "protocol_flow": [
+      "Step 1: Each router starts knowing only its direct neighbor costs",
+      "Step 2: Routers share their distance vectors with neighbors",
+      "Step 3: Each router updates its table if a shorter path is found",
+      "Step 4: Process repeats until no more updates occur (convergence)"
+    ]
+  },
+  "code": {
+    "language": "c",
+    "files": [
+      {
+        "filename": "dvr.c",
+        "full_source": "#include <stdio.h>\n\nstruct node {\n    unsigned dist[20];\n    unsigned from[20];\n} rt[10];\n\nint main() {\n    int costmat[20][20];\n    int nodes, i, j, k, count = 0;\n\n    printf(\"\\nEnter the number of nodes : \");\n    scanf(\"%d\", &nodes);\n\n    printf(\"\\nEnter the cost matrix :\\n\");\n    for(i = 0; i < nodes; i++) {\n        for(j = 0; j < nodes; j++) {\n            scanf(\"%d\", &costmat[i][j]);\n            costmat[i][i] = 0;\n            rt[i].dist[j] = costmat[i][j];\n            rt[i].from[j] = j;\n        }\n    }\n\n    do {\n        count = 0;\n        for(i = 0; i < nodes; i++) {\n            for(j = 0; j < nodes; j++) {\n                for(k = 0; k < nodes; k++) {\n                    if(rt[i].dist[j] > costmat[i][k] + rt[k].dist[j]) {\n                        rt[i].dist[j] = rt[i].dist[k] + rt[k].dist[j];\n                        rt[i].from[j] = k;\n                        count++;\n                    }\n                }\n            }\n        }\n    } while(count != 0);\n\n    for(i = 0; i < nodes; i++) {\n        printf(\"\\n\\nFor router %d\\n\", i + 1);\n        for(j = 0; j < nodes; j++) {\n            printf(\"\\t\\nnode %d via %d Distance %d\", j + 1, rt[i].from[j] + 1, rt[i].dist[j]);\n        }\n    }\n    printf(\"\\n\\n\");\n    return 0;\n}",
+        "steps": [
+          {
+            "step_id": 1,
+            "title": "Define Data Structures",
+            "line_start": 3,
+            "line_end": 6,
+            "explanation": "We define a struct `node` to represent each router's routing table. It stores the shortest distance to every other node (`dist`) and the next hop to get there (`from`). We create an array `rt` to hold the routing table for up to 10 routers.",
+            "concept_tags": ["structs", "routing table"]
+          },
+          {
+            "step_id": 2,
+            "title": "Initialize Cost Matrix",
+            "line_start": 16,
+            "line_end": 22,
+            "explanation": "We read the initial link costs between all pairs of routers into `costmat`. The distance from a router to itself is set to 0. We also initialize each router's routing table with these direct link costs.",
+            "concept_tags": ["2D arrays", "initialization"]
+          },
+          {
+            "step_id": 3,
+            "title": "Bellman-Ford Relaxation",
+            "line_start": 25,
+            "line_end": 36,
+            "explanation": "This is the core of the algorithm. We use three nested loops to check every possible path. For every router `i` and destination `j`, we check if going through an intermediate router `k` is cheaper than the currently known path. If it is, we update the distance and the next hop.",
+            "concept_tags": ["Bellman-Ford", "nested loops"]
+          },
+          {
+            "step_id": 4,
+            "title": "Convergence Check",
+            "line_start": 37,
+            "line_end": 37,
+            "explanation": "The `do-while` loop continues as long as `count != 0`. `count` tracks how many updates were made in the current iteration. When no updates are made (count is 0), it means the routing tables have converged to the optimal paths.",
+            "concept_tags": ["convergence", "do-while"]
+          }
+        ]
+      }
+    ]
+  },
+  "practice": {
+    "exercises": [
+      {
+        "id": 1,
+        "type": "fill_blank",
+        "difficulty": "easy",
+        "description": "Complete the Bellman-Ford relaxation condition",
+        "code_template": "if (rt[i].dist[j] > ____ + rt[k].dist[j])",
+        "answer": "costmat[i][k]",
+        "hint": "What is the cost of traveling from router i to router k directly?"
+      }
+    ]
+  }
+}

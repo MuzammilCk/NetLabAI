@@ -1,0 +1,24 @@
+{
+  "experiment_id": 11,
+  "type": "leaky_bucket",
+  "config": { "bucket_size": 60, "output_rate": 20 },
+  "frames": [
+    {
+      "packet_size": 30, "event": "ACCEPT",
+      "bucket_level_before": 0, "bucket_level_after": 30,
+      "output_this_tick": 20, "bucket_after_output": 10,
+      "narration": "Packet of 30 bytes arrives. Bucket has space (0+30 ≤ 60). Accepted. Output rate drains 20 bytes. 10 bytes remain."
+    },
+    {
+      "packet_size": 40, "event": "PARTIAL_DROP",
+      "bucket_level_before": 10, "bucket_level_after": 60,
+      "dropped_bytes": -10,
+      "narration": "40-byte packet arrives. Bucket has 10 bytes. 10+40=50 ≤ 60, accepted. Output drains 20. 30 remain."
+    },
+    {
+      "packet_size": 80, "event": "REJECT",
+      "bucket_level_before": 40,
+      "narration": "80-byte packet arrives. 80 > bucket_size(60). Packet is larger than the entire bucket. REJECTED!"
+    }
+  ]
+}
