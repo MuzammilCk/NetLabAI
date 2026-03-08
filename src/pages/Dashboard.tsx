@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, Code2, Activity, Play } from "lucide-react";
+import { BookOpen, Code2, Play } from "lucide-react";
 
 interface ExperimentSummary {
   id: number;
@@ -17,13 +17,17 @@ export default function Dashboard() {
   useEffect(() => {
     fetch("/api/experiments")
       .then(async res => {
-        const contentType = res.headers.get("content-type");
-        if (contentType && contentType.indexOf("application/json") !== -1) {
-          return res.json();
-        } else {
-          const text = await res.text();
-          throw new Error(`Expected JSON but received: ${text.substring(0, 50)}...`);
+        if (!res.ok) {
+          throw new Error(`Failed to fetch experiments: ${res.status} ${res.statusText}`);
         }
+
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          return res.json();
+        }
+
+        const text = await res.text();
+        throw new Error(`Expected JSON but received: ${text.substring(0, 50)}...`);
       })
       .then(data => {
         setExperiments(data);

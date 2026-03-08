@@ -20,13 +20,17 @@ export default function ExperimentPage() {
   useEffect(() => {
     fetch(`/api/experiments/${id}`)
       .then(async res => {
-        const contentType = res.headers.get("content-type");
-        if (contentType && contentType.indexOf("application/json") !== -1) {
-          return res.json();
-        } else {
-          const text = await res.text();
-          throw new Error(`Expected JSON but received: ${text.substring(0, 50)}...`);
+        if (!res.ok) {
+          throw new Error(`Failed to fetch experiment ${id}: ${res.status} ${res.statusText}`);
         }
+
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          return res.json();
+        }
+
+        const text = await res.text();
+        throw new Error(`Expected JSON but received: ${text.substring(0, 50)}...`);
       })
       .then(data => {
         setExperiment(data);
@@ -93,9 +97,9 @@ export default function ExperimentPage() {
         {/* Left Panel (60%) */}
         <div className="w-3/5 bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden flex flex-col">
           {activeTab === "concept" && <TheoryPanel theory={experiment.theory} />}
-          {activeTab === "code" && (
-            <CodeWalkthrough 
-              codeData={experiment.code.files[0]} 
+          {activeTab === "code" && experiment.code?.files?.[0] && (
+            <CodeWalkthrough
+              codeData={experiment.code.files[0]}
               onLineClick={(num, content) => setSelectedLine({ number: num, content })}
             />
           )}
@@ -109,11 +113,11 @@ export default function ExperimentPage() {
             <MessageSquare className="w-4 h-4 text-indigo-400" />
             <h2 className="font-semibold text-sm">AI Tutor</h2>
           </div>
-          <AiTutorPanel 
-            experimentId={experiment.id} 
+          <AiTutorPanel
+            experimentId={experiment.id}
             experimentTitle={experiment.title}
-            fullSource={experiment.code.files[0].full_source}
-            selectedLine={selectedLine} 
+            fullSource={experiment.code?.files?.[0]?.full_source ?? ""}
+            selectedLine={selectedLine}
           />
         </div>
       </div>
