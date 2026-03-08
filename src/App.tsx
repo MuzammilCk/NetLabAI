@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, NavLink } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import ExperimentPage from "./pages/ExperimentPage";
 
@@ -15,12 +16,12 @@ export default function App() {
               <span className="font-semibold text-lg tracking-tight">NetLabAI</span>
             </div>
             <nav className="flex items-center gap-6 text-sm font-medium text-zinc-400">
-              <a href="/" className="hover:text-zinc-50 transition-colors">Experiments</a>
-              <a href="#" className="hover:text-zinc-50 transition-colors">Exam Mode</a>
+              <NavLink to="/" className="hover:text-zinc-50 transition-colors">Experiments</NavLink>
+              <span className="text-zinc-600 cursor-not-allowed" title="Exam Mode is not implemented yet">Exam Mode</span>
             </nav>
           </div>
         </header>
-        
+
         <main className="max-w-7xl mx-auto px-4 py-8">
           <Routes>
             <Route path="/" element={<Dashboard />} />
